@@ -1,0 +1,2 @@
+./oclvanitygen -v -D "0: [Intel] Intel Pro" -D "0: [Intel] Intel(R) Core(TM) i7-4770HQ CPU @ 2.2" -k 1Funge
+
