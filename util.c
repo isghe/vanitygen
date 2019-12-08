@@ -414,13 +414,13 @@ PKCS5_PBKDF2_HMAC(const char *pass, int passlen,
 	unsigned char digtmp[EVP_MAX_MD_SIZE], *p, itmp[4];
 	int cplen, j, k, tkeylen, mdlen;
 	unsigned long i = 1;
-	HMAC_CTX hctx;
+	HMAC_CTX * hctx;
 
 	mdlen = EVP_MD_size(digest);
 	if (mdlen < 0)
 		return 0;
 
-	HMAC_CTX_init(&hctx);
+	hctx = HMAC_CTX_new();
 	p = out;
 	tkeylen = keylen;
 	if(!pass)
@@ -440,10 +440,10 @@ PKCS5_PBKDF2_HMAC(const char *pass, int passlen,
 		itmp[1] = (unsigned char)((i >> 16) & 0xff);
 		itmp[2] = (unsigned char)((i >> 8) & 0xff);
 		itmp[3] = (unsigned char)(i & 0xff);
-		HMAC_Init_ex(&hctx, pass, passlen, digest, NULL);
-		HMAC_Update(&hctx, salt, saltlen);
-		HMAC_Update(&hctx, itmp, 4);
-		HMAC_Final(&hctx, digtmp, NULL);
+		HMAC_Init_ex(hctx, pass, passlen, digest, NULL);
+		HMAC_Update(hctx, salt, saltlen);
+		HMAC_Update(hctx, itmp, 4);
+		HMAC_Final(hctx, digtmp, NULL);
 		memcpy(p, digtmp, cplen);
 		for(j = 1; j < iter; j++)
 			{
@@ -456,7 +456,7 @@ PKCS5_PBKDF2_HMAC(const char *pass, int passlen,
 		i++;
 		p+= cplen;
 		}
-	HMAC_CTX_free(&hctx);
+	HMAC_CTX_free(hctx);
 	return 1;
 }
 #endif  /* OPENSSL_VERSION_NUMBER < 0x10000000L */
