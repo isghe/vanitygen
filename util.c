@@ -105,7 +105,7 @@ vg_b58_encode_check(void *buf, size_t len, char *result)
 
 	BN_CTX *bnctx;
 	BIGNUM *bn, *bndiv, *bntmp;
-	BIGNUM bna, bnb, bnbase, bnrem;
+	BIGNUMP bna, bnb, bnbase, bnrem;
 	unsigned char *binres;
 	int brlen, zpfx;
 
@@ -114,10 +114,10 @@ vg_b58_encode_check(void *buf, size_t len, char *result)
 	BN_init(&bnb);
 	BN_init(&bnbase);
 	BN_init(&bnrem);
-	BN_set_word(&bnbase, 58);
+	BN_set_word(bnbase, 58);
 
-	bn = &bna;
-	bndiv = &bnb;
+	bn = bna;
+	bndiv = bnb;
 
 	brlen = (2 * len) + 4;
 	binres = (unsigned char*) malloc(brlen);
@@ -133,11 +133,11 @@ vg_b58_encode_check(void *buf, size_t len, char *result)
 
 	p = brlen;
 	while (!BN_is_zero(bn)) {
-		BN_div(bndiv, &bnrem, bn, &bnbase, bnctx);
+		BN_div(bndiv, bnrem, bn, bnbase, bnctx);
 		bntmp = bn;
 		bn = bndiv;
 		bndiv = bntmp;
-		d = BN_get_word(&bnrem);
+		d = BN_get_word(bnrem);
 		binres[--p] = vg_b58_alphabet[d];
 	}
 
@@ -149,10 +149,10 @@ vg_b58_encode_check(void *buf, size_t len, char *result)
 	result[brlen - p] = '\0';
 
 	free(binres);
-	BN_clear_free(&bna);
-	BN_clear_free(&bnb);
-	BN_clear_free(&bnbase);
-	BN_clear_free(&bnrem);
+	BN_clear_free(bna);
+	BN_clear_free(bnb);
+	BN_clear_free(bnbase);
+	BN_clear_free(bnrem);
 	BN_CTX_free(bnctx);
 }
 
@@ -164,7 +164,7 @@ vg_b58_decode_check(const char *input, void *buf, size_t len)
 {
 	int i, l, c;
 	unsigned char *xbuf = NULL;
-	BIGNUM bn, bnw, bnbase;
+	BIGNUMP bn, bnw, bnbase;
 	BN_CTX *bnctx;
 	unsigned char hash1[32], hash2[32];
 	int zpfx;
@@ -173,7 +173,7 @@ vg_b58_decode_check(const char *input, void *buf, size_t len)
 	BN_init(&bn);
 	BN_init(&bnw);
 	BN_init(&bnbase);
-	BN_set_word(&bnbase, 58);
+	BN_set_word(bnbase, 58);
 	bnctx = BN_CTX_new();
 
 	/* Build a bignum from the encoded value */
@@ -184,10 +184,10 @@ vg_b58_decode_check(const char *input, void *buf, size_t len)
 		c = vg_b58_reverse_map[(int)input[i]];
 		if (c < 0)
 			goto out;
-		BN_clear(&bnw);
-		BN_set_word(&bnw, c);
-		BN_mul(&bn, &bn, &bnbase, bnctx);
-		BN_add(&bn, &bn, &bnw);
+		BN_clear(bnw);
+		BN_set_word(bnw, c);
+		BN_mul(bn, bn, bnbase, bnctx);
+		BN_add(bn, bn, bnw);
 	}
 
 	/* Copy the bignum to a byte buffer */
@@ -198,7 +198,7 @@ vg_b58_decode_check(const char *input, void *buf, size_t len)
 			break;
 		zpfx++;
 	}
-	c = BN_num_bytes(&bn);
+	c = BN_num_bytes(bn);
 	l = zpfx + c;
 	if (l < 5)
 		goto out;
@@ -208,7 +208,7 @@ vg_b58_decode_check(const char *input, void *buf, size_t len)
 	if (zpfx)
 		memset(xbuf, 0, zpfx);
 	if (c)
-		BN_bn2bin(&bn, xbuf + zpfx);
+		BN_bn2bin(bn, xbuf + zpfx);
 
 	/* Check the hash code */
 	l -= 4;
@@ -228,9 +228,9 @@ vg_b58_decode_check(const char *input, void *buf, size_t len)
 out:
 	if (xbuf)
 		free(xbuf);
-	BN_clear_free(&bn);
-	BN_clear_free(&bnw);
-	BN_clear_free(&bnbase);
+	BN_clear_free(bn);
+	BN_clear_free(bnw);
+	BN_clear_free(bnbase);
 	BN_CTX_free(bnctx);
 	return res;
 }
@@ -334,7 +334,7 @@ vg_set_privkey(const BIGNUM *bnpriv, EC_KEY *pkey)
 int
 vg_decode_privkey(const char *b58encoded, EC_KEY *pkey, int *addrtype)
 {
-	BIGNUM bnpriv;
+	BIGNUMP bnpriv;
 	unsigned char ecpriv[48];
 	int res;
 
@@ -343,9 +343,9 @@ vg_decode_privkey(const char *b58encoded, EC_KEY *pkey, int *addrtype)
 		return 0;
 
 	BN_init(&bnpriv);
-	BN_bin2bn(ecpriv + 1, res - 1, &bnpriv);
-	res = vg_set_privkey(&bnpriv, pkey);
-	BN_clear_free(&bnpriv);
+	BN_bin2bn(ecpriv + 1, res - 1, bnpriv);
+	res = vg_set_privkey(bnpriv, pkey);
+	BN_clear_free(bnpriv);
 	*addrtype = ecpriv[0];
 	return 1;
 }
@@ -456,7 +456,7 @@ PKCS5_PBKDF2_HMAC(const char *pass, int passlen,
 		i++;
 		p+= cplen;
 		}
-	HMAC_CTX_cleanup(&hctx);
+	HMAC_CTX_free(&hctx);
 	return 1;
 }
 #endif  /* OPENSSL_VERSION_NUMBER < 0x10000000L */
@@ -698,7 +698,7 @@ vg_protect_decode_privkey(EC_KEY *pkey, int *keytype,
 {
 	unsigned char ecpriv[64];
 	unsigned char ecenc[128];
-	BIGNUM bn;
+	BIGNUMP bn;
 	int restype;
 	int res;
 
@@ -723,9 +723,9 @@ vg_protect_decode_privkey(EC_KEY *pkey, int *keytype,
 	res = 1;
 	if (pkey) {
 		BN_init(&bn);
-		BN_bin2bn(ecpriv, 32, &bn);
-		res = vg_set_privkey(&bn, pkey);
-		BN_clear_free(&bn);
+		BN_bin2bn(ecpriv, 32, bn);
+		res = vg_set_privkey(bn, pkey);
+		BN_clear_free(bn);
 		OPENSSL_cleanse(ecpriv, sizeof(ecpriv));
 	}
 

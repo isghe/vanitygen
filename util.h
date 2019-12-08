@@ -25,6 +25,8 @@
 #include <openssl/bn.h>
 #include <openssl/ec.h>
 
+#include "BN_init.h"
+
 extern const char *vg_b58_alphabet;
 extern const signed char vg_b58_reverse_map[256];
 
